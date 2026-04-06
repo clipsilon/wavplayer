@@ -6,6 +6,7 @@
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 static wp_wav *s_wav = NULL;
 static wp_stream *s_stream = NULL;
@@ -13,6 +14,11 @@ static wp_stream *s_stream = NULL;
 static void cleanup_exit(int signal);
 
 int main(int argc, const char **argv) {
+    if (argc > 1 && strncmp(argv[1], "--version", sizeof("--version")) == 0) {
+        printf("%s version %d.%d.%d\n", WP_NAME, WP_VERSION_MAJOR, WP_VERSION_MINOR, WP_VERSION_PATCH);
+        return 0;
+    }
+
     if (argc < 3) {
         printf("usage: %s WAVFILE VOLUME\n", WP_NAME);
         return 0;
