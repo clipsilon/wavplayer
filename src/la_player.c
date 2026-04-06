@@ -44,7 +44,7 @@ la_stream *la_player_create(la_wav **wav) {
     stream->total_frames = stream->total_uploads * stream->frames_per_write;
     stream->total_seconds = stream->total_frames / stream->wav->format.samples_per_second;
 
-    log_info("Created PCM stream: (%s) %dhz %d-bit %lds",
+    log_info("Created PCM stream: (%s) %dhz %d-bit (%ld seconds)",
              (*wav)->format.channels == 2 ? "stereo" : "mono",
              (*wav)->format.samples_per_second,
              (*wav)->format.bits_per_sample,
@@ -54,6 +54,7 @@ la_stream *la_player_create(la_wav **wav) {
 }
 
 void la_player_free(la_stream *stream) {
+    term_showcursor();
     if (stream != NULL) {
         snd_pcm_close(stream->pcm);
         free(stream->buffer);
@@ -63,10 +64,19 @@ void la_player_free(la_stream *stream) {
 
 void la_player_upload(la_stream *stream, float amplitude) {
     assert(stream != NULL);
-    assert(amplitude > -1);
 
     //----------------------------------------------------------
-    // Validate PCM information.
+    // Validate audio information.
+
+    if (amplitude < 0.0f) {
+        log_warning("Invalid amplitude: %f - acceptable value range is (0.0 to 1.0)", amplitude);
+        amplitude = 0.0f;
+    }
+
+    if (amplitude > 1.0f) {
+        log_warning("Invalid amplitude: %f - acceptable value range is (0.0 to 1.0)", amplitude);
+        amplitude = 1.0f;
+    }
 
     if (stream->wav->format.channels != 1 && stream->wav->format.channels != 2) {
         log_error("Invalid number of channels: %d", stream->wav->format.channels);
@@ -77,6 +87,8 @@ void la_player_upload(la_stream *stream, float amplitude) {
     // Begin sending frames to sound card.
 
     stream->timestamp_start = timestamp(stream->pcm);
+
+    term_hidecursor();
 
     long frames_written_total = 0;
     for (int i = 0; i < stream->total_uploads; i++) {
@@ -114,25 +126,29 @@ void la_player_upload(la_stream *stream, float amplitude) {
 
         /* Print the frame writing status */
         frames_written_total += frames_written;
-        term_hidecursor();
+
         log_info_overwrite("Frames sent to soundcard: (%ld/%ld)",
                            frames_written_total, stream->total_frames);
     }
+
     term_showcursor();
     printf("\n");
 }
 
 void la_player_drain(la_stream *stream) {
     long elapsed_seconds = 0;
+
+    term_hidecursor();
+
     for (;;) {
         if (elapsed_seconds > stream->total_seconds) {
             break;
         }
         stream->timestamp_end = timestamp(stream->pcm);
-        term_hidecursor();
         log_info_overwrite("Seconds elapsed: (%ld/%ld)", elapsed_seconds, stream->total_seconds);
         elapsed_seconds = stream->timestamp_end.tv_sec - stream->timestamp_start.tv_sec;
     }
+
     term_showcursor();
     printf("\n");
 }
