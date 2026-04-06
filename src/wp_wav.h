@@ -1,9 +1,9 @@
-#ifndef LA_WAV_H
-#define LA_WAV_H
+#ifndef WP_WAV_H
+#define WP_WAV_H
 
 #include <stdint.h>
 
-typedef struct la_wav {
+typedef struct wp_wav {
     struct {
         uint32_t cbsize;
         uint16_t format_tag;
@@ -18,9 +18,9 @@ typedef struct la_wav {
         uint32_t cbsize;
         uint8_t *raw;
     } data;
-} la_wav;
+} wp_wav;
 
-la_wav *la_wav_read(const char *path);
-void la_wav_free(la_wav *wav);
+wp_wav *wp_wav_read(const char *path);
+void wp_wav_free(wp_wav *wav);
 
 #endif

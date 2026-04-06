@@ -1,6 +1,6 @@
-#include "la_wav.h"
+#include "wp_wav.h"
 
-#include "la_logging.h"
+#include "wp_logging.h"
 
 #include <assert.h>
 #include <stdbool.h>
@@ -10,44 +10,44 @@
 
 static bool is_wave(FILE *pfile);
 static bool seek_chunk_start(FILE *pfile, const char *id);
-static bool parse_fmt(FILE *pfile, la_wav *wav);
-static bool parse_data(FILE *pfile, la_wav *wav);
+static bool parse_fmt(FILE *pfile, wp_wav *wav);
+static bool parse_data(FILE *pfile, wp_wav *wav);
 
-la_wav *la_wav_read(const char *path) {
+wp_wav *wp_wav_read(const char *path) {
     assert(path != NULL);
     assert(path[0] != '\0');
 
     FILE *pfile = fopen(path, "rb");
     if (pfile == NULL) {
-        log_error("Failed to read wav file \"%s\"", path);
+        wp_log_error("Failed to read wav file \"%s\"", path);
         return NULL;
     }
 
     if (is_wave(pfile) == false) {
-        log_error("Not a valid WAV file");
+        wp_log_error("Not a valid WAV file");
         return NULL;
     }
 
-    la_wav *wav = calloc(1, sizeof(la_wav));
+    wp_wav *wav = calloc(1, sizeof(wp_wav));
 
     if (seek_chunk_start(pfile, "fmt ") == false) {
-        log_error("Failed to find chunk: fmt");
+        wp_log_error("Failed to find chunk: fmt");
     }
     parse_fmt(pfile, wav);
 
     if (seek_chunk_start(pfile, "data") == false) {
-        log_error("Failed to find chunk: data");
+        wp_log_error("Failed to find chunk: data");
     }
     parse_data(pfile, wav);
 
     fclose(pfile);
 
-    log_info("Read wav file: \"%s\"", path);
+    wp_log_info("Read wav file: \"%s\"", path);
 
     return wav;
 }
 
-void la_wav_free(la_wav *wav) {
+void wp_wav_free(wp_wav *wav) {
     if (wav != NULL) {
         free(wav->data.raw);
         free(wav);
@@ -67,13 +67,13 @@ static bool is_wave(FILE *pfile) {
     fread(chunk_id, 4, sizeof(char), pfile);
     fread(&chunk_size, 1, sizeof(int), pfile);
     if (strncmp(chunk_id, "RIFF", 4) != 0) {
-        log_error("Header not found: RIFF");
+        wp_log_error("Header not found: RIFF");
         return false;
     }
 
     fread(chunk_id, 4, sizeof(char), pfile);
     if (strncmp(chunk_id, "WAVE", 4) != 0) {
-        log_error("Header not found: WAVE");
+        wp_log_error("Header not found: WAVE");
         return false;
     }
 
@@ -96,7 +96,7 @@ static bool seek_chunk_start(FILE *pfile, const char *id) {
     return false;
 }
 
-static bool parse_fmt(FILE *pfile, la_wav *wav) {
+static bool parse_fmt(FILE *pfile, wp_wav *wav) {
     char chunk_id[4];
     fread(chunk_id, sizeof(char), 4, pfile);
     fread(&wav->format.cbsize, sizeof(uint32_t), 1, pfile);
@@ -114,7 +114,7 @@ static bool parse_fmt(FILE *pfile, la_wav *wav) {
     return true;
 }
 
-static bool parse_data(FILE *pfile, la_wav *wav) {
+static bool parse_data(FILE *pfile, wp_wav *wav) {
     char chunk_id[4];
     fread(chunk_id, sizeof(char), 4, pfile);
     fread(&wav->data.cbsize, sizeof(uint32_t), 1, pfile);
